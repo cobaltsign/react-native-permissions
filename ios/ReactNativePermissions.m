@@ -11,36 +11,36 @@
 #import "ReactNativePermissions.h"
 
 #if __has_include(<React/RCTBridge.h>)
-  #import <React/RCTBridge.h>
+#import <React/RCTBridge.h>
 #elif __has_include("React/RCTBridge.h")
-  #import "React/RCTBridge.h"
+#import "React/RCTBridge.h"
 #else
-  #import "RCTBridge.h"
+#import "RCTBridge.h"
 #endif
 
 #if __has_include(<React/RCTConvert.h>)
-  #import <React/RCTConvert.h>
+#import <React/RCTConvert.h>
 #elif __has_include("React/RCTConvert.h")
-  #import "React/RCTConvert.h"
+#import "React/RCTConvert.h"
 #else
-  #import "RCTConvert.h"
+#import "RCTConvert.h"
 #endif
 
 #if __has_include(<React/RCTEventDispatcher.h>)
-  #import <React/RCTEventDispatcher.h>
+#import <React/RCTEventDispatcher.h>
 #elif __has_include("React/RCTEventDispatcher.h")
-  #import "React/RCTEventDispatcher.h"
+#import "React/RCTEventDispatcher.h"
 #else
-  #import "RCTEventDispatcher.h"
+#import "RCTEventDispatcher.h"
 #endif
 
-
+#import "RNPNotification.h"
 #import "RNPAudioVideo.h"
 #import "RNPPhoto.h"
 
 
-@interface ReactNativePermissions();
-
+@interface ReactNativePermissions()
+@property (strong, nonatomic) RNPNotification *notificationMgr;
 @end
 
 @implementation ReactNativePermissions
@@ -60,7 +60,7 @@ RCT_EXPORT_MODULE();
 {
     if (self = [super init]) {
     }
-
+    
     return self;
 }
 
@@ -81,7 +81,7 @@ RCT_REMAP_METHOD(canOpenSettings, canOpenSettings:(RCTPromiseResolveBlock)resolv
 RCT_EXPORT_METHOD(openSettings:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
     if (@(UIApplicationOpenSettingsURLString != nil)) {
-
+        
         NSNotificationCenter * __weak center = [NSNotificationCenter defaultCenter];
         id __block token = [center addObserverForName:UIApplicationDidBecomeActiveNotification
                                                object:nil
@@ -90,7 +90,7 @@ RCT_EXPORT_METHOD(openSettings:(RCTPromiseResolveBlock)resolve rejecter:(RCTProm
                                                [center removeObserver:token];
                                                resolve(@YES);
                                            }];
-
+        
         NSURL *url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
         [[UIApplication sharedApplication] openURL:url];
     }
@@ -100,9 +100,9 @@ RCT_EXPORT_METHOD(openSettings:(RCTPromiseResolveBlock)resolve rejecter:(RCTProm
 RCT_REMAP_METHOD(getPermissionStatus, getPermissionStatus:(RNPType)type json:(id)json resolve:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
     NSString *status;
-
+    
     switch (type) {
-
+            
 
         case RNPTypeCamera:
             status = [RNPAudioVideo getStatus:@"video"];
@@ -110,31 +110,57 @@ RCT_REMAP_METHOD(getPermissionStatus, getPermissionStatus:(RNPType)type json:(id
         case RNPTypePhoto:
             status = [RNPPhoto getStatus];
             break;
+        case RNPTypeNotification:
+            status = [RNPNotification getStatus];
+            break;
         default:
             break;
     }
-
+    
     resolve(status);
 }
 
 RCT_REMAP_METHOD(requestPermission, permissionType:(RNPType)type json:(id)json resolve:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
     NSString *status;
-
+    
     switch (type) {
+
         case RNPTypeCamera:
             return [RNPAudioVideo request:@"video" completionHandler:resolve];
         case RNPTypePhoto:
             return [RNPPhoto request:resolve];
+        case RNPTypeNotification:
+            return [self requestNotification:json resolve:resolve];
         default:
             break;
     }
-
-
+    
+    
 }
 
 
-
-
+- (void) requestNotification:(id)json resolve:(RCTPromiseResolveBlock)resolve
+{
+    NSArray *typeStrings = [RCTConvert NSArray:json];
+    
+    UIUserNotificationType types;
+    if ([typeStrings containsObject:@"alert"])
+        types = types | UIUserNotificationTypeAlert;
+    
+    if ([typeStrings containsObject:@"badge"])
+        types = types | UIUserNotificationTypeBadge;
+    
+    if ([typeStrings containsObject:@"sound"])
+        types = types | UIUserNotificationTypeSound;
+    
+    
+    if (self.notificationMgr == nil) {
+        self.notificationMgr = [[RNPNotification alloc] init];
+    }
+    
+    [self.notificationMgr request:types completionHandler:resolve];
+    
+}
 
 @end
