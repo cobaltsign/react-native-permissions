@@ -10,9 +10,9 @@
 
 @implementation RCTConvert (RNPStatus)
 
-RCT_ENUM_CONVERTER(RNPType, (@{
-                                @"camera" : @(RNPTypeCamera),
+RCT_ENUM_CONVERTER(RNPType, (@{ @"camera" : @(RNPTypeCamera),
                                 @"photo" : @(RNPTypePhoto),
+                                @"notification" : @(RNPTypeNotification),
                                 }),
                                 RNPTypeUnknown, integerValue)
 
